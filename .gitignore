@@ -1,0 +1,22 @@
+# Saved UCB show detail pages (~53 MB). Regenerable via the Tampermonkey saver.
+data/raw-pages/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Logs
+*.log
+/tmp/
+
+# Node (in case anyone adds dev deps later)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Local Claude harness state — don't ship to GitHub
+.claude/

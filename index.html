@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DCM26 Browser — Del Close Marathon 2026 planner</title>
+  <meta name="description" content="Browse and plan your Del Close Marathon 2026 schedule. Filter by venue, day, and performer. Save shows, export to Google Calendar." />
+  <link rel="stylesheet" href="styles.css?v=2" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="brand">
+      <div class="brand-mark">DCM<span>26</span></div>
+      <div class="brand-sub">Browser · unofficial fan planner</div>
+    </div>
+    <nav class="view-tabs" role="tablist" aria-label="Views">
+      <button data-view="browse" class="tab tab-active" role="tab" aria-selected="true">Browse</button>
+      <button data-view="schedule" class="tab" role="tab" aria-selected="false">
+        My Schedule <span class="count-badge" id="savedCount">0</span>
+      </button>
+      <button data-view="calendar" class="tab" role="tab" aria-selected="false">Calendar</button>
+      <button data-view="performers" class="tab" role="tab" aria-selected="false">Performers</button>
+    </nav>
+  </header>
+
+  <div id="shareBanner" class="share-banner" hidden>
+    <div class="share-banner-body">
+      <strong>Schedule shared with you.</strong>
+      <span id="shareBannerDetail">0 shows from a snapshot link.</span>
+    </div>
+    <div class="share-banner-actions">
+      <button id="shareImportBtn" class="btn btn-primary">Import to my schedule</button>
+      <button id="shareDismissBtn" class="btn btn-ghost">Dismiss</button>
+    </div>
+  </div>
+
+  <main class="layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="search-row">
+        <input type="search" id="searchInput" placeholder="Search shows, descriptions…" autocomplete="off" />
+        <button id="clearSearch" class="icon-btn" title="Clear" hidden>×</button>
+      </div>
+
+      <section class="filter-group">
+        <h3>Day</h3>
+        <div class="chip-group" id="filterDays"></div>
+      </section>
+
+      <section class="filter-group">
+        <h3>Venue</h3>
+        <div class="chip-group" id="filterVenues"></div>
+      </section>
+
+      <section class="filter-group">
+        <h3>Category</h3>
+        <div class="chip-group" id="filterCategories"></div>
+      </section>
+
+      <section class="filter-group" id="performerFilterSection" hidden>
+        <h3>Performer filter</h3>
+        <div id="activePerformer" class="active-performer"></div>
+        <button id="clearPerformer" class="btn btn-ghost btn-small">Clear performer filter</button>
+      </section>
+
+      <button id="resetFilters" class="btn btn-ghost btn-block">Reset all filters</button>
+    </aside>
+
+    <section class="content" id="content">
+      <div class="content-toolbar">
+        <div id="resultsMeta" class="results-meta"></div>
+        <div class="toolbar-actions">
+          <button id="exportIcsBtn" class="btn btn-primary" disabled>Export .ics</button>
+          <button id="shareBtn" class="btn btn-secondary" disabled>Share schedule</button>
+        </div>
+      </div>
+      <div id="viewRoot"></div>
+    </section>
+  </main>
+
+  <div id="shareModal" class="modal" hidden>
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-panel">
+      <button class="modal-close" data-close>×</button>
+      <h2>Share your schedule</h2>
+      <p class="modal-note">
+        This URL is a <strong>snapshot</strong> of the shows you've saved right now.
+        It won't update as you add or remove shows — re-share to update.
+      </p>
+      <div class="share-url-row">
+        <input id="shareUrl" type="text" readonly />
+        <button id="copyShareUrl" class="btn btn-primary">Copy</button>
+      </div>
+      <p id="shareCopiedNote" class="share-copied" hidden>Copied to clipboard.</p>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <p>
+      Unofficial planner for UCB's Del Close Marathon 26 (June 10–14, 2026).
+      Data parsed from <a href="https://ucbcomedy.com/shows/dcm26-marathon-calendar/" target="_blank" rel="noopener">ucbcomedy.com</a>.
+      Tickets and showtimes are subject to change — always verify on the UCB site.
+    </p>
+  </footer>
+
+  <script src="app.js?v=2"></script>
+</body>
+</html>
