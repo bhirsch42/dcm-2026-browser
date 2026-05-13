@@ -439,31 +439,32 @@ function DesktopGrid({
               />
             )),
           )}
-          {[...byCell.entries()].flatMap(([key, shows]) => {
+          {[...byCell.entries()].map(([key, cellShows]) => {
             const [venue, slotStr] = key.split('|');
             const slot = Number(slotStr);
             const vIdx = venues.indexOf(venue);
-            return shows.map((s, i) => {
-              return (
-                <div
-                  key={s.id}
-                  className="p-0.5"
-                  style={{
-                    gridRow: `${slot + 1} / span 1`,
-                    gridColumn: vIdx + 2,
-                    zIndex: shows.length > 1 ? 1 + i : 1,
-                  }}
-                >
+            return (
+              <div
+                key={key}
+                className="p-0.5 flex flex-col gap-0.5"
+                style={{
+                  gridRow: `${slot + 1} / span 1`,
+                  gridColumn: vIdx + 2,
+                }}
+              >
+                {cellShows.map((s) => (
                   <ShowChip
+                    key={s.id}
                     ref={setRef(s.id)}
                     show={s}
                     matched={!filtersOn || matchedIds.has(s.id)}
                     isCurrentMatch={currentMatchId === s.id}
                     compact
+                    dense={cellShows.length > 1}
                   />
-                </div>
-              );
-            });
+                ))}
+              </div>
+            );
           })}
         </div>
       </div>

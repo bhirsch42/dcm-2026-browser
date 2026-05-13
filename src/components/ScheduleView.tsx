@@ -113,7 +113,7 @@ export function ScheduleView() {
                       )}
                       {isConflict && (
                         <div className="text-[11px] text-conflict mt-1 font-semibold">
-                          ⚠ overlaps with another saved show
+                          ⚠ Overlaps with another saved show
                         </div>
                       )}
                     </div>
