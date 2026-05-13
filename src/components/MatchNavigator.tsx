@@ -17,11 +17,12 @@ export function MatchNavigator({ totalMatched, totalShown, currentIndex, onPrev,
   }
   return (
     <div className="flex items-center gap-2 text-sm">
-      <span className="text-zinc-300">
+      <span className="text-zinc-300 whitespace-nowrap">
         <span className="text-accent font-semibold">{totalMatched === 0 ? 0 : currentIndex + 1}</span>
-        <span className="text-zinc-500"> of </span>
+        <span className="text-zinc-500 sm:hidden"> / </span>
+        <span className="text-zinc-500 hidden sm:inline"> of </span>
         <span className="text-zinc-200 font-semibold">{totalMatched}</span>
-        <span className="text-zinc-500"> match{totalMatched === 1 ? '' : 'es'}</span>
+        <span className="text-zinc-500 hidden sm:inline"> match{totalMatched === 1 ? '' : 'es'}</span>
       </span>
       <button
         onClick={onPrev}

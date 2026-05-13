@@ -184,10 +184,28 @@ export function GridView() {
         className="sticky z-20 h-10 -mx-3 md:-mx-6 px-3 md:px-6 bg-zinc-800 border-b border-zinc-700 flex items-center justify-between gap-3 mb-3"
         style={{ top: HEADER_OFFSET_PX }}
       >
-        <div className="text-xs text-zinc-500 truncate">
+        <div className="hidden sm:block text-xs text-zinc-500 truncate">
           {DAY_ROUTES.length} days · {allShows.length} shows
         </div>
-        <div className="flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-2">
+          <MatchNavigator
+            totalMatched={matchedList.length}
+            totalShown={allShows.length}
+            currentIndex={matchIdx}
+            onPrev={prev}
+            onNext={next}
+            active={filtersOn}
+          />
+          {filtersOn && (
+            <button
+              onClick={resetFilters}
+              className="px-2.5 h-7 rounded text-xs border border-zinc-600 text-zinc-300 hover:bg-zinc-700 whitespace-nowrap"
+              title="Clear all filters and search"
+            >
+              <span className="hidden sm:inline">Clear filters</span>
+              <span className="sm:hidden">Clear</span>
+            </button>
+          )}
           {filtersOn && matchedList.length > 0 && (
             <button
               onClick={() => saveMany(matchedList)}
@@ -206,25 +224,7 @@ export function GridView() {
             >
               {unsavedMatchCount === 0
                 ? `✓ ${matchedList.length} saved`
-                : `+ Save ${unsavedMatchCount}`}
-            </button>
-          )}
-          <MatchNavigator
-            totalMatched={matchedList.length}
-            totalShown={allShows.length}
-            currentIndex={matchIdx}
-            onPrev={prev}
-            onNext={next}
-            active={filtersOn}
-          />
-          {filtersOn && (
-            <button
-              onClick={resetFilters}
-              className="px-2.5 h-7 rounded text-xs border border-zinc-600 text-zinc-300 hover:bg-zinc-700 whitespace-nowrap"
-              title="Clear all filters and search"
-            >
-              <span className="hidden sm:inline">Clear filters</span>
-              <span className="sm:hidden">Clear</span>
+                : `+ Save ${unsavedMatchCount} to schedule`}
             </button>
           )}
         </div>
