@@ -84,6 +84,25 @@ const SLUG_OVERRIDES = {
   'tim-eric-ucb-dcm26-headliner': ['Tim Heidecker', 'Eric Wareheim'],
 };
 
+// UCB renders a structured "talent grid" with one anchor per performer on most
+// show pages. This is the most reliable source — it's hand-tagged metadata,
+// not free-text — so we try it first.
+//   <h4 class="ucb-talent-grid__name">
+//     <a href="…/people/anthony-atamanuik/" class="ucb-talent-grid__name-link">
+//       Anthony Atamanuik
+//     </a>
+//   </h4>
+function extractTalentGrid(html) {
+  const re = /class="ucb-talent-grid__name-link"[^>]*>\s*([^<]+?)\s*<\/a>/g;
+  const names = [];
+  let m;
+  while ((m = re.exec(html))) {
+    const n = decodeEntities(m[1]).replace(/\s+/g, ' ').trim();
+    if (n) names.push(n);
+  }
+  return names;
+}
+
 // Try several variants of the Cast pattern.
 function extractCast(html) {
   // Variant 1: <p><strong>Cast: <span ...>NAMES</span></strong>
@@ -141,8 +160,12 @@ for (const file of files) {
   const slug = file.replace(/\.html$/, '');
   const show = showsBySlug.get(slug);
   const html = fs.readFileSync(path.join(RAW_DIR, file), 'utf8');
-  let names = extractCast(html);
-  let source = 'cast';
+  let names = extractTalentGrid(html);
+  let source = 'talent-grid';
+  if (!names.length) {
+    names = extractCast(html);
+    if (names.length) source = 'cast';
+  }
   if (!names.length && show) {
     const titleNames = extractFromHeadlinerTitle(show.title);
     if (titleNames.length) {
@@ -170,6 +193,7 @@ for (const file of files) {
     stats.missing.push(slug);
     continue;
   }
+  if (source === 'talent-grid') stats.viaTalentGrid = (stats.viaTalentGrid || 0) + 1;
   if (source === 'cast') stats.withCast++;
   // Trim and de-dup case-insensitively keeping the first casing.
   const seen = new Set();
@@ -188,6 +212,7 @@ for (const file of files) {
 fs.writeFileSync(OUT, JSON.stringify(out, null, 2));
 
 console.error(`Parsed ${stats.total} pages`);
+console.error(`  via talent grid       ${stats.viaTalentGrid || 0}`);
 console.error(`  with Cast: line       ${stats.withCast}`);
 console.error(`  via title fallback    ${stats.withTitleFallback}`);
 console.error(`  via "(Name)" in body  ${stats.viaParens || 0}`);

@@ -45,8 +45,8 @@ public/
   data/performers.json           slug+id → [performer names] — generated, do not hand-edit
   data/raw-pages/                gitignored, ~53 MB. Saved show detail pages.
 scripts/
-  extract.js                     calendar HTML → public/data/shows.json
-  extract-performers.js          raw-pages/*.html → public/data/performers.json
+  extract.cjs                    calendar HTML → public/data/shows.json
+  extract-performers.cjs         raw-pages/*.html → public/data/performers.json
   dcm26-page-saver.user.js       Tampermonkey bulk-fetcher for show detail pages
 vite.config.ts                   base: VITE_BASE ?? '/'  (set when deploying to GH Pages)
 tailwind.config*                 none — Tailwind v4 reads tokens via @theme in index.css
@@ -81,7 +81,7 @@ Three generated inputs, never hand-edited:
 
 1. **Calendar HTML** — the user saved `~/Desktop/DCM26 Marathon Calendar - Upright Citizens Brigade.html` from `https://ucbcomedy.com/shows/dcm26-marathon-calendar/`. Infinite-scroll; saved with all 331 shows already loaded.
 
-2. **`scripts/extract.js`** turns that HTML into `public/data/shows.json`. Each show:
+2. **`scripts/extract.cjs`** turns that HTML into `public/data/shows.json`. Each show:
    ```
    id, slug, title, url, image, datetime, weekday, dateLabel,
    timeLabel, venue, venueName, categories[], categoryNames[], excerpt,
@@ -91,16 +91,17 @@ Three generated inputs, never hand-edited:
 
 3. **Show detail pages** — `scripts/dcm26-page-saver.user.js` is a Tampermonkey userscript that runs on the calendar page (NOT in Node — ucbcomedy.com returns 403 to server-side fetches via Cloudflare). It walks `article.wpgb-card a[href*="/show/"]`, fetches each detail page via same-origin `fetch`, persists progress/HTML in IndexedDB, and packages everything into a ZIP via JSZip. Output: `dcm26-pages-330.zip` → unzip into `public/data/raw-pages/`.
 
-4. **`scripts/extract-performers.js`** walks `public/data/raw-pages/*.html` and produces `public/data/performers.json`. Strategies, in order:
-   - **Cast line** (291/330): `<p><strong>Cast: <span data-sheets-root="1">Name, Name, …</span></strong>` in the `ucb-event-description` block.
-   - **Title fallback** (21/330): headliner shows put the performer in the title.
-   - **Character-paren pattern** (2/330): "George Lucas (Connor Ratliff)". Slice from `<div class="ucb-event-description">` to next `<div class="tickera"`; strip HTML tags first so `<strong>` inside parens doesn't break the match.
+4. **`scripts/extract-performers.cjs`** walks `public/data/raw-pages/*.html` and produces `public/data/performers.json`. Strategies, in order:
+   - **Talent grid** (265/330): `<a class="ucb-talent-grid__name-link">Name</a>` — UCB's structured per-performer markup. Most reliable; try first.
+   - **Cast line** (52/330): `<p><strong>Cast: <span data-sheets-root="1">Name, Name, …</span></strong>` in the `ucb-event-description` block.
+   - **Title fallback** (4/330): headliner shows put the performer in the title.
+   - **Character-paren pattern** (0/330): "George Lucas (Connor Ratliff)". Slice from `<div class="ucb-event-description">` to next `<div class="tickera"`; strip HTML tags first so `<strong>` inside parens doesn't break the match.
    - **SLUG_OVERRIDES** (1/330): hardcoded `tim-eric-ucb-dcm26-headliner` → `["Tim Heidecker", "Eric Wareheim"]`.
-   - 15 shows remain empty — UCB hasn't published cast.
+   - 8 shows remain empty — UCB hasn't published cast.
 
 ```
-node scripts/extract.js                 # rebuilds public/data/shows.json
-node scripts/extract-performers.js      # rebuilds public/data/performers.json
+node scripts/extract.cjs                 # rebuilds public/data/shows.json
+node scripts/extract-performers.cjs      # rebuilds public/data/performers.json
 ```
 
 ---
