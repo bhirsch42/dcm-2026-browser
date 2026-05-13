@@ -104,13 +104,15 @@ function extractTalentGrid(html) {
 }
 
 // Try several variants of the Cast pattern.
+// UCB pages are hand-edited, so the wrapper element switches between <p> and
+// <div> and we see typos like "Cast;" with a semicolon.
 function extractCast(html) {
-  // Variant 1: <p><strong>Cast: <span ...>NAMES</span></strong>
-  let m = html.match(/<p[^>]*>\s*<strong>\s*Cast\s*:\s*(?:<span[^>]*>)?\s*([\s\S]*?)\s*(?:<\/span>)?\s*<\/strong>/i);
+  // Variant 1: <p|div><strong>Cast[:;] <span ...>NAMES</span></strong>
+  let m = html.match(/<(?:p|div)[^>]*>\s*<strong>\s*Cast\s*[:;]\s*(?:<span[^>]*>)?\s*([\s\S]*?)\s*(?:<\/span>)?\s*<\/strong>/i);
   if (m) return splitNames(stripTags(m[1]));
 
-  // Variant 2: just "Cast: NAMES" inside a paragraph without <strong>
-  m = html.match(/<p[^>]*>\s*Cast\s*:\s*([\s\S]*?)<\/p>/i);
+  // Variant 2: just "Cast: NAMES" inside a paragraph/div without <strong>
+  m = html.match(/<(?:p|div)[^>]*>\s*Cast\s*[:;]\s*([\s\S]*?)<\/(?:p|div)>/i);
   if (m) return splitNames(stripTags(m[1]));
 
   // Variant 3: "Featuring:" or "Starring:"
