@@ -1,5 +1,11 @@
 # Saved UCB show detail pages (~53 MB). Regenerable via the Tampermonkey saver.
-data/raw-pages/
+public/data/raw-pages/
+
+# Vite build output
+dist/
+
+# TypeScript incremental build cache
+*.tsbuildinfo
 
 # OS / editor cruft
 .DS_Store

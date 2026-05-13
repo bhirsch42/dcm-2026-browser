@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+@theme {
+  --color-accent: #ff3344;
+  --color-accent-soft: #ff5566;
+  --color-headliner: #ffd84d;
+  --color-saved: #59ffb1;
+  --color-conflict: #ff8a4d;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+html {
+  /* Leave room for the 137px sticky stack when anything (anchor link, scrollIntoView,
+     or the match navigator) scrolls into the top of the page. */
+  scroll-padding-top: 140px;
+}
+
+/* The desktop grid is a horizontal scroller. Keep some padding on left/right so
+   chips don't land flush against the time-column or the right edge. */
+[data-grid-scroll] {
+  scroll-padding-left: 96px;
+  scroll-padding-right: 32px;
+}
+
+body {
+  font-family: var(--font-sans);
+  min-height: 100vh;
+}
+
+/* Tailwind v4 dropped the default `cursor: pointer` on buttons. Put it back. */
+button:not(:disabled),
+[role="button"]:not(:disabled) {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: not-allowed;
+}
+
+/* Hide scrollbars on the day tab strip */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }
+
+/* Flash highlight when the find-match index moves to a cell */
+@keyframes match-flash {
+  0%   { box-shadow: 0 0 0 3px var(--color-accent), 0 0 24px 4px rgba(255, 51, 68, 0.55); }
+  100% { box-shadow: 0 0 0 0 transparent, 0 0 0 0 transparent; }
+}
+.match-flash {
+  animation: match-flash 1.1s ease-out;
+}
+
+/* Fast fade+scale-in for the hover/pinned card. */
+@keyframes hover-card-in {
+  0%   { opacity: 0; transform: translateY(-2px) scale(0.98); }
+  100% { opacity: 1; transform: none; }
+}
+.hover-card-in {
+  animation: hover-card-in 110ms ease-out;
+  transform-origin: top left;
+}

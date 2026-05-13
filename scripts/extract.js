@@ -6,7 +6,7 @@ const fs = require('fs');
 const path = require('path');
 
 const SRC = process.argv[2] || '/Users/bhirsch/Desktop/DCM26 Marathon Calendar - Upright Citizens Brigade.html';
-const OUT = path.join(__dirname, '..', 'data', 'shows.json');
+const OUT = path.join(__dirname, '..', 'public', 'data', 'shows.json');
 
 const html = fs.readFileSync(SRC, 'utf8');
 

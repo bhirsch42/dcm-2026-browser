@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Read data/raw-pages/*.html (from the userscript zip) and emit data/performers.json
+// Read public/data/raw-pages/*.html (from the userscript zip) and emit public/data/performers.json
 // keyed by both show slug and id.
 //
 // Strategy:
@@ -11,9 +11,9 @@
 const fs = require('fs');
 const path = require('path');
 
-const RAW_DIR = path.join(__dirname, '..', 'data', 'raw-pages');
-const OUT = path.join(__dirname, '..', 'data', 'performers.json');
-const SHOWS = require(path.join(__dirname, '..', 'data', 'shows.json'));
+const RAW_DIR = path.join(__dirname, '..', 'public', 'data', 'raw-pages');
+const OUT = path.join(__dirname, '..', 'public', 'data', 'performers.json');
+const SHOWS = require(path.join(__dirname, '..', 'public', 'data', 'shows.json'));
 
 function decodeEntities(s) {
   return s
