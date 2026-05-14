@@ -162,17 +162,20 @@ for (const file of files) {
   const slug = file.replace(/\.html$/, '');
   const show = showsBySlug.get(slug);
   const html = fs.readFileSync(path.join(RAW_DIR, file), 'utf8');
-  let names = extractTalentGrid(html);
-  let source = 'talent-grid';
-  if (!names.length) {
-    names = extractCast(html);
-    if (names.length) source = 'cast';
-  }
+  // Collect from BOTH the talent grid and the Cast: line — UCB pages frequently list more
+  // people in the free-text Cast line than they tag in the structured grid (and vice versa).
+  // Merge them, preserving talent-grid casing when a name appears in both.
+  const talentNames = extractTalentGrid(html);
+  const castNames = extractCast(html);
+  const sources = [];
+  if (talentNames.length) sources.push('talent-grid');
+  if (castNames.length) sources.push('cast');
+  let names = [...talentNames, ...castNames];
   if (!names.length && show) {
     const titleNames = extractFromHeadlinerTitle(show.title);
     if (titleNames.length) {
       names = titleNames;
-      source = 'title';
+      sources.push('title');
       stats.withTitleFallback++;
     }
   }
@@ -181,13 +184,13 @@ for (const file of files) {
     const parenNames = extractCharacterParens(html);
     if (parenNames.length) {
       names = parenNames;
-      source = 'parens';
+      sources.push('parens');
       stats.viaParens = (stats.viaParens || 0) + 1;
     }
   }
   if (!names.length && SLUG_OVERRIDES[slug]) {
     names = SLUG_OVERRIDES[slug];
-    source = 'override';
+    sources.push('override');
     stats.viaOverride = (stats.viaOverride || 0) + 1;
   }
   if (!names.length) {
@@ -195,9 +198,12 @@ for (const file of files) {
     stats.missing.push(slug);
     continue;
   }
-  if (source === 'talent-grid') stats.viaTalentGrid = (stats.viaTalentGrid || 0) + 1;
-  if (source === 'cast') stats.withCast++;
-  // Trim and de-dup case-insensitively keeping the first casing.
+  if (sources.includes('talent-grid')) stats.viaTalentGrid = (stats.viaTalentGrid || 0) + 1;
+  if (sources.includes('cast')) stats.withCast++;
+  if (sources.includes('talent-grid') && sources.includes('cast')) {
+    stats.viaBoth = (stats.viaBoth || 0) + 1;
+  }
+  // Trim and de-dup case-insensitively keeping the first casing (talent-grid wins since it's first).
   const seen = new Set();
   const uniq = [];
   for (const n of names) {
@@ -216,6 +222,7 @@ fs.writeFileSync(OUT, JSON.stringify(out, null, 2));
 console.error(`Parsed ${stats.total} pages`);
 console.error(`  via talent grid       ${stats.viaTalentGrid || 0}`);
 console.error(`  with Cast: line       ${stats.withCast}`);
+console.error(`  via both grid + cast  ${stats.viaBoth || 0}`);
 console.error(`  via title fallback    ${stats.withTitleFallback}`);
 console.error(`  via "(Name)" in body  ${stats.viaParens || 0}`);
 console.error(`  via slug override     ${stats.viaOverride || 0}`);
