@@ -1,5 +1,6 @@
 import { RouterProvider } from '@tanstack/react-router';
 import { useEffect } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import { router } from './router';
 import { useStore } from './state';
 import { attachPerformers, loadPerformers, loadShows } from './data';
@@ -33,5 +34,10 @@ export function App() {
     );
   }
 
-  return <RouterProvider router={router} />;
+  return (
+    <>
+      <RouterProvider router={router} />
+      <Analytics />
+    </>
+  );
 }

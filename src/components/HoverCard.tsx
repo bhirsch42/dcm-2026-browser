@@ -8,14 +8,18 @@ interface Props {
   show: Show;
   anchor: HTMLElement;
   onClose: () => void;
+  onMouseEnter?: () => void;
+  onMouseLeave?: () => void;
   onPin?: () => void;
 }
 
 const W = 340;
+const GAP = 2;
+const BRIDGE = 14;
 
-export function HoverCard({ show, anchor, onClose }: Props) {
+export function HoverCard({ show, anchor, onClose, onMouseEnter, onMouseLeave }: Props) {
   const ref = useRef<HTMLDivElement>(null);
-  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const [pos, setPos] = useState<{ top: number; left: number; side: 'right' | 'left' } | null>(null);
   const saved = useStore((s) => s.saved.has(show.id));
   const toggle = useStore((s) => s.toggleSaved);
 
@@ -24,27 +28,45 @@ export function HoverCard({ show, anchor, onClose }: Props) {
     const vw = window.innerWidth;
     const vh = window.innerHeight;
     const cardH = ref.current?.offsetHeight ?? 320;
-    let left = rect.right + 12;
-    if (left + W > vw - 12) left = rect.left - W - 12;
+    let side: 'right' | 'left' = 'right';
+    let left = rect.right + GAP;
+    if (left + W > vw - 12) {
+      left = rect.left - W - GAP;
+      side = 'left';
+    }
     if (left < 12) left = Math.max(12, Math.min(vw - W - 12, rect.left));
     let top = rect.top;
     if (top + cardH > vh - 12) top = Math.max(12, vh - cardH - 12);
-    setPos({ top, left });
+    setPos({ top, left, side });
   }, [anchor]);
 
   return createPortal(
     <div
       ref={ref}
       className={[
-        'fixed z-50 w-[340px] max-w-[92vw] bg-zinc-800 border border-zinc-600 rounded-lg shadow-2xl text-zinc-100 overflow-hidden',
+        'fixed z-50 w-[340px] max-w-[92vw] bg-zinc-800 border border-zinc-600 rounded-lg shadow-2xl text-zinc-100',
         pos ? 'hover-card-in' : 'opacity-0',
       ].join(' ')}
       style={{ top: pos?.top ?? 0, left: pos?.left ?? 0 }}
       role="dialog"
-      onMouseEnter={(e) => e.stopPropagation()}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
     >
+      <span
+        aria-hidden
+        className="absolute top-0 bottom-0"
+        style={{
+          [pos?.side === 'left' ? 'right' : 'left']: -BRIDGE,
+          width: BRIDGE,
+        } as React.CSSProperties}
+      />
       {show.image && (
-        <img src={show.image} alt="" className="w-full h-32 object-cover bg-zinc-700" loading="lazy" />
+        <img
+          src={show.image}
+          alt=""
+          className="w-full h-32 object-cover bg-zinc-700 rounded-t-lg"
+          loading="lazy"
+        />
       )}
       <div className="p-3 space-y-2">
         <div className="flex items-start justify-between gap-2">

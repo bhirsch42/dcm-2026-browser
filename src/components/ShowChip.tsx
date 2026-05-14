@@ -35,13 +35,20 @@ export const ShowChip = forwardRef<HTMLDivElement, Props>(function ShowChip(
 
   const headliner = show.categoryNames.some((c) => c.toLowerCase().includes('headliner'));
 
+  const cancelClose = useCallback(() => {
+    if (closeTimer.current) {
+      window.clearTimeout(closeTimer.current);
+      closeTimer.current = undefined;
+    }
+  }, []);
+  const scheduleClose = useCallback(() => {
+    cancelClose();
+    closeTimer.current = window.setTimeout(() => closeCardIfActive(show.id), 200);
+  }, [cancelClose, closeCardIfActive, show.id]);
   const onEnter = useCallback(() => {
-    if (closeTimer.current) window.clearTimeout(closeTimer.current);
+    cancelClose();
     openCard(show.id);
-  }, [openCard, show.id]);
-  const onLeave = useCallback(() => {
-    closeTimer.current = window.setTimeout(() => closeCardIfActive(show.id), 120);
-  }, [closeCardIfActive, show.id]);
+  }, [cancelClose, openCard, show.id]);
 
   // Hover card is desktop-only — on mobile it covers the whole screen.
   const showCard = isDesktop && isActive;
@@ -51,7 +58,7 @@ export const ShowChip = forwardRef<HTMLDivElement, Props>(function ShowChip(
       ref={setRefs}
       data-show-id={show.id}
       onMouseEnter={isDesktop ? onEnter : undefined}
-      onMouseLeave={isDesktop ? onLeave : undefined}
+      onMouseLeave={isDesktop ? scheduleClose : undefined}
       onClick={(e) => {
         if ((e.target as HTMLElement).closest('button, a')) return;
         window.open(show.url, '_blank', 'noopener');
@@ -112,7 +119,13 @@ export const ShowChip = forwardRef<HTMLDivElement, Props>(function ShowChip(
       </div>
 
       {showCard && localRef.current && (
-        <HoverCard show={show} anchor={localRef.current} onClose={closeCard} />
+        <HoverCard
+          show={show}
+          anchor={localRef.current}
+          onClose={closeCard}
+          onMouseEnter={cancelClose}
+          onMouseLeave={scheduleClose}
+        />
       )}
     </div>
   );
