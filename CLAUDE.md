@@ -65,7 +65,7 @@ npm run preview        # serve dist/ locally
 npm run typecheck
 ```
 
-Deployed to `dcmplanner.com` (apex, Route 53) via `.github/workflows/deploy.yml` on every push to `main`. The custom domain serves at root, so `base` stays `/` — **do not set `VITE_BASE`**. `public/CNAME` carries the domain into `dist/` so GH Pages keeps the custom-domain binding on each deploy. Hash history (`#/day/wed`) means **no 404.html fallback is needed**.
+Deployed to `dcmplanner.com` (apex) via Vercel; domain registered at Route 53. Vercel auto-detects Vite and builds with `npm run build` → `dist/`. The custom domain serves at root, so `base` stays `/` — **do not set `VITE_BASE`**. Hash history (`#/day/wed`) means **no 404.html fallback is needed**.
 
 ---
 
