@@ -10,11 +10,6 @@
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
-html {
-  /* Leave room for the 137px sticky stack when anything (anchor link, scrollIntoView,
-     or the match navigator) scrolls into the top of the page. */
-  scroll-padding-top: 140px;
-}
 
 /* The desktop grid is a horizontal scroller. Keep some padding on left/right so
    chips don't land flush against the time-column or the right edge. */

@@ -36,27 +36,111 @@ const DAY_HEADING_TOP_PX = HEADER_OFFSET_PX + TOOLBAR_HEIGHT_PX;
 const STICKY_STACK_PX = HEADER_OFFSET_PX + TOOLBAR_HEIGHT_PX + 40;
 
 /**
- * Manual scroll: the page is the window, and any horizontally-scrolling ancestor
- * marked with `[data-grid-scroll]` is panned independently. We don't trust
- * native `scrollIntoView` because the desktop grid is an overflow-x scroller
- * that the browser may treat as a vertical scroll container too, swallowing the
- * page-level scroll. Math is in absolute (document) coordinates.
+ * Lerp-follower scroll animation: each frame steps the scroll position a
+ * fraction of the way toward `target`. When the target changes mid-animation
+ * (e.g. the user keeps typing, narrowing the match), the next frame simply
+ * picks up the new value — no animation restart, no jitter.
+ *
+ * One state object per scrollable element. `lastSet` is the value we wrote on
+ * the previous frame; if `scrollY` differs from it by more than a small
+ * tolerance, the user scrolled manually and we bail.
+ */
+type ScrollAnim = { target: number; rafId: number | null; lastSet: number };
+const LERP = 0.22;
+const SNAP_THRESHOLD = 0.5;
+const USER_SCROLL_TOLERANCE = 3;
+
+const winAnim: ScrollAnim = { target: 0, rafId: null, lastSet: 0 };
+const scrollerAnims = new WeakMap<HTMLElement, ScrollAnim>();
+
+function step(cur: number, target: number): number | null {
+  const dist = target - cur;
+  if (Math.abs(dist) < SNAP_THRESHOLD) return null; // arrived
+  return cur + dist * LERP;
+}
+
+function tickWindow() {
+  if (Math.abs(window.scrollY - winAnim.lastSet) > USER_SCROLL_TOLERANCE) {
+    winAnim.rafId = null; // user took over
+    return;
+  }
+  const next = step(window.scrollY, winAnim.target);
+  if (next === null) {
+    window.scrollTo(0, winAnim.target);
+    winAnim.lastSet = winAnim.target;
+    winAnim.rafId = null;
+    return;
+  }
+  window.scrollTo(0, next);
+  winAnim.lastSet = next;
+  winAnim.rafId = requestAnimationFrame(tickWindow);
+}
+
+function animateWindowTo(targetY: number): void {
+  winAnim.target = targetY;
+  if (winAnim.rafId !== null) return; // loop already running, will see new target
+  winAnim.lastSet = window.scrollY;
+  winAnim.rafId = requestAnimationFrame(tickWindow);
+}
+
+function makeScrollerTick(scroller: HTMLElement): FrameRequestCallback {
+  const tick: FrameRequestCallback = () => {
+    const s = scrollerAnims.get(scroller);
+    if (!s) return;
+    if (Math.abs(scroller.scrollLeft - s.lastSet) > USER_SCROLL_TOLERANCE) {
+      s.rafId = null;
+      return;
+    }
+    const next = step(scroller.scrollLeft, s.target);
+    if (next === null) {
+      scroller.scrollLeft = s.target;
+      s.lastSet = s.target;
+      s.rafId = null;
+      return;
+    }
+    scroller.scrollLeft = next;
+    s.lastSet = next;
+    s.rafId = requestAnimationFrame(tick);
+  };
+  return tick;
+}
+
+function animateScrollerTo(scroller: HTMLElement, targetX: number): void {
+  let s = scrollerAnims.get(scroller);
+  if (!s) {
+    s = { target: targetX, rafId: null, lastSet: scroller.scrollLeft };
+    scrollerAnims.set(scroller, s);
+  }
+  s.target = targetX;
+  if (s.rafId !== null) return;
+  s.lastSet = scroller.scrollLeft;
+  s.rafId = requestAnimationFrame(makeScrollerTick(scroller));
+}
+
+/**
+ * Compute the desired window-Y and grid-scroller-X for `el`, and kick the
+ * lerp animation toward them. Safe to call every render — the animation
+ * gracefully retargets without restarting.
+ *
+ * The desktop grid is an overflow-x scroller, so we drive it independently
+ * from window-Y. Math is in absolute (document) coordinates: `rect.top +
+ * scrollY` is invariant of scroll position, so re-measuring mid-animation
+ * yields the same absolute target as long as the chip itself hasn't moved.
  */
 function scrollChipIntoView(el: HTMLElement): void {
   const rect = el.getBoundingClientRect();
   const visibleH = window.innerHeight - STICKY_STACK_PX;
   const targetY =
     rect.top + window.scrollY - STICKY_STACK_PX - visibleH / 2 + rect.height / 2;
-  window.scrollTo({ top: Math.max(0, targetY), behavior: 'smooth' });
+  animateWindowTo(Math.max(0, targetY));
 
   const scroller = el.closest('[data-grid-scroll]') as HTMLElement | null;
   if (scroller) {
     const sRect = scroller.getBoundingClientRect();
-    const cRect = el.getBoundingClientRect();
-    const xOffset = cRect.left - sRect.left;
+    const xOffset = rect.left - sRect.left;
     const targetX =
-      scroller.scrollLeft + xOffset - sRect.width / 2 + cRect.width / 2;
-    scroller.scrollTo({ left: Math.max(0, targetX), behavior: 'smooth' });
+      scroller.scrollLeft + xOffset - sRect.width / 2 + rect.width / 2;
+    animateScrollerTo(scroller, Math.max(0, targetX));
   }
 }
 
@@ -94,6 +178,7 @@ export function GridView() {
         perf: filters.performers.size ? [...filters.performers] : undefined,
       },
       replace: true,
+      resetScroll: false,
     });
   }, [filters, navigate]);
 
@@ -117,9 +202,19 @@ export function GridView() {
 
   const matchedList = useMemo(() => {
     if (matchedIds.size === 0) return [] as string[];
+    const venueRank = (v: string) => {
+      const i = VENUE_ORDER.indexOf(v);
+      return i === -1 ? VENUE_ORDER.length : i;
+    };
     return [...allShows]
       .filter((s) => matchedIds.has(s.id))
-      .sort((a, b) => a.datetime.localeCompare(b.datetime))
+      .sort((a, b) => {
+        const t = a.datetime.localeCompare(b.datetime);
+        if (t !== 0) return t;
+        const v = venueRank(a.venueName) - venueRank(b.venueName);
+        if (v !== 0) return v;
+        return a.venueName.localeCompare(b.venueName);
+      })
       .map((s) => s.id);
   }, [allShows, matchedIds]);
 
@@ -129,20 +224,37 @@ export function GridView() {
     setMatchIdx(matchedList.length > 0 ? 0 : -1);
   }, [matchedList.join('|')]);
 
+  const matchListKey = matchedList.join('|');
+  const lastFlashedId = useRef<string | null>(null);
+
   useEffect(() => {
-    if (matchIdx < 0 || matchIdx >= matchedList.length) return;
-    const id = matchedList[matchIdx];
+    if (matchedList.length === 0) {
+      lastFlashedId.current = null;
+      return;
+    }
+    const idx = Math.min(Math.max(matchIdx, 0), matchedList.length - 1);
+    const targetId = matchedList[idx];
+    if (!targetId) return;
     // Both the desktop grid and the mobile timeline render a chip for every id.
     // Pick the one currently visible (offsetParent !== null filters out display:none subtrees).
-    const candidates = document.querySelectorAll<HTMLElement>(`[data-show-id="${id}"]`);
+    const candidates = document.querySelectorAll<HTMLElement>(
+      `[data-show-id="${targetId}"]`,
+    );
     const el =
       [...candidates].find((c) => c.offsetParent !== null) ?? candidates[0] ?? null;
     if (!el) return;
+    // Retargets the running animation; safe to call every render.
     scrollChipIntoView(el);
-    el.classList.remove('match-flash');
-    void el.offsetWidth;
-    el.classList.add('match-flash');
-  }, [matchIdx, matchedList]);
+    // Only re-trigger the flash when the actual matched chip changes — otherwise
+    // typing/deleting the same character rapidly would re-flash every keystroke.
+    if (lastFlashedId.current !== targetId) {
+      el.classList.remove('match-flash');
+      void el.offsetWidth;
+      el.classList.add('match-flash');
+      lastFlashedId.current = targetId;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [matchListKey, matchIdx]);
 
   const prev = () =>
     setMatchIdx((i) => (matchedList.length === 0 ? -1 : (i - 1 + matchedList.length) % matchedList.length));
@@ -168,7 +280,8 @@ export function GridView() {
   const setRef = (_id: string) => () => {};
 
   const filtersOn = filtersActive(filters);
-  const currentMatchId = matchIdx >= 0 ? matchedList[matchIdx] : null;
+  const currentMatchId =
+    matchIdx >= 0 && matchIdx < matchedList.length ? matchedList[matchIdx] : null;
   const saved = useStore((s) => s.saved);
   const saveMany = useStore((s) => s.saveMany);
   const resetFilters = useStore((s) => s.resetFilters);
@@ -286,7 +399,7 @@ function DaySection({
   const isDesktop = useIsDesktop();
 
   return (
-    <section id={id} className="scroll-mt-24">
+    <section id={id} className="scroll-mt-[140px]">
       <h2
         className="sticky z-10 bg-zinc-800 -mx-3 md:-mx-6 px-3 md:px-6 h-10 border-b border-zinc-700 flex items-baseline justify-between"
         style={{ top: DAY_HEADING_TOP_PX }}
